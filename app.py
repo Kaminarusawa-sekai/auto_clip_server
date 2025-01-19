@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import autogen
 import engine
+
+from contentgenerate import llm_generate_content
 # def greet(name, intensity):
 
 #     return "Hello, " + str(name) + str(intensity)
@@ -26,53 +28,58 @@ if not os.path.exists(project_directory):
     os.makedirs(project_directory)
 
 def open_yaml(yaml_file):
+    
     for f in yaml_file.temp_files:
+        output_path=""
         try:
             gen = autogen.AutoGen(f, project_directory)
             asyncio.run(gen.tts())
             
-
-            project_path_list = project_directory
+            project_name=gen.get_project_name()
+            project_path = os.path.join(project_directory,project_name)
             assets_path = save_directory
 
             # project_name = os.path.basename(project_path)
             # print("project_name:", project_name)
             with ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers as needed
                 futures = []
-                for project_path in project_path_list:
-                    content = engine.read_cookbook_yaml(project_path)
-                    if content:
-                        movies = content["影片"]
+                # for project_path in project_path_list:
+                content = engine.read_cookbook_yaml(project_path)
+                if content:
+                    movies = content["影片"]
+                    
+                    # count = len(video_title_array)
+                    prefix = content["素材文件前缀"]
+                    # video_tail = content["片尾"]
+                    print("初始化prefix:", prefix)
+                    m = movies[0]
+                    for m in movies:
+                        video_title = m["标题"]
+                        print("video_title:", video_title)
+                        video_content = m["内容顺序"]
+                        movie_cover = m["影片封面"]
+                        bgm_obj = m["BGM"]
+                        subtitle_obj = m["字幕"]
+                        audio_obj = m["音频"]
+                        tail_obj = m["片尾"]
+                        mid = m["编号"]
                         
-                        # count = len(video_title_array)
-                        prefix = content["素材文件前缀"]
-                        # video_tail = content["片尾"]
-                        print("初始化prefix:", prefix)
-                        m = movies[0]
-                        for m in movies:
-                            video_title = m["标题"]
-                            print("video_title:", video_title)
-                            video_content = m["内容顺序"]
-                            movie_cover = m["影片封面"]
-                            bgm_obj = m["BGM"]
-                            subtitle_obj = m["字幕"]
-                            audio_obj = m["音频"]
-                            tail_obj = m["片尾"]
-                            mid = m["编号"]
-                            future = executor.submit(engine.NewInstance, prefix, video_title, project_path, assets_path, video_content, movie_cover, bgm_obj, audio_obj, subtitle_obj, tail_obj, mid)
-                            futures.append(future)
+                        future = executor.submit(engine.NewInstance, prefix, video_title, project_path, assets_path, video_content, movie_cover, bgm_obj, audio_obj, subtitle_obj, tail_obj, mid)
+                        # future = engine.NewInstance(prefix, video_title, project_path, assets_path, video_content, movie_cover, bgm_obj, audio_obj, subtitle_obj, tail_obj, mid)
+                        futures.append(future)
 
                 # Wait for all threads to complete
                 for future in futures:
-                    future.result()    
+                    output_path=future.result()    
                     print("视频合成完成")
-
+            return output_path
+            # return os.path.join(".", project_path, mid + ".mp4")
         except FileNotFoundError:
             print(f"File '.yaml' not found")
         except yaml.YAMLError as e:
             print(f"Error parsing: {e}")
         
-    return "成功"
+    
 
 def list_files():
     try:
@@ -123,36 +130,65 @@ def change_button_able_upload(fileGR):
 def change_button_able_delate(fileGR):
      if fileGR!=None:
           return gr.update(visible=False)
-     
+
+
 
 def clip(file_scipt):
+    
     return open_yaml(file_script)
+    # return "project\森咖啡-script2\森咖啡-script2.mp4"
     
 
 
      
 with gr.Blocks() as demo:
-    file_script = gr.File(label="选择要剪辑的脚本文件，请确保素材库中有与脚本文件对应的素材")
-    
-    file_footage = gr.File(label="选择素材文件上传")
-    button=gr.Button("开始剪辑")
-    # button.visible=False
+    with gr.Tab("行业找细分"):
+        text_enterprise_name=gr.Text(label="输入企业的名字")
+        text_enterprise_industry_name=gr.Text(label="输入企业擅长的行业描述") 
+        text_industry_name=gr.Text(label="输入想了解的行业")
+        button=gr.Button("开始生成细分赛道推荐报告")
+        md_segmented=gr.Markdown(label="产业细分赛道推荐报告")
 
-    file_footage.upload(fn=change_button_able_upload,inputs=file_footage,outputs=button)
-    # file_script.delete(fn=change_button_able_delate,inputs=file_script,outputs=button)
-    gr.Markdown("### 素材库")
-    # 创建一个表格输出用于显示文件信息
-    file_table = gr.Dataframe(headers=["名称", "大小", "最后修改"], label="文件列表")
-    
-    # 创建一个按钮用于刷新文件列表
-    refresh_button = gr.Button("刷新文件列表")
-    
-    # 当点击刷新按钮时，调用list_files函数更新文件列表
-    refresh_button.click(list_files, outputs=file_table)
-    demo.load(list_files, outputs=file_table)
+        button.click(fn=llm_generate_content.get_segmentation_anaysis,inputs=[text_industry_name,text_enterprise_name,text_enterprise_industry_name],outputs=md_segmented)
+    with gr.Tab("细分找产品"):
+        text_industry_name=gr.Text(label="输入细分所属的行业")
+        text_segmented_name=gr.Text(label="输入想了解的细分")
+        text_enterprise_name=gr.Text(label="输入企业的名字")
+        text_enterprise_industry_name=gr.Text(label="输入企业擅长的行业描述")
+        
+        button=gr.Button("开始生成赛道产品推荐报告")
+        md_product=gr.Markdown(label="赛道产品推荐报告")
+        button.click(fn=llm_generate_content.get_product_anaysis,inputs=[text_industry_name,text_segmented_name,text_enterprise_name,text_enterprise_industry_name],outputs=md_product)
+    with gr.Tab("产品找竞品"):
+        text_enterprise_name=gr.Text(label="输入企业的名字")
+        text_product_name=gr.Text(label="输入想了解的竞品")
+        text_product_description=gr.Text(label="需要的话输入一些产品描述")
+        button=gr.Button("开始生成产品竞品报告")
+        md_competitive=gr.Markdown(label="产品竞品报告")
+        button.click(fn=llm_generate_content.get_competitive_anaysis,inputs=[text_enterprise_name,text_product_name,text_product_description],outputs=md_competitive)
 
-    text = gr.Textbox(lines=2, interactive=True)
-    button.click(fn=clip, inputs=file_script, outputs=text)
+    with gr.Tab("剪辑"):
+        file_script = gr.File(label="选择要剪辑的脚本文件，请确保素材库中有与脚本文件对应的素材")
+        
+        file_footage = gr.File(label="选择素材文件上传")
+        button=gr.Button("开始剪辑")
+        # button.visible=False
+
+        file_footage.upload(fn=change_button_able_upload,inputs=file_footage,outputs=button)
+        # file_script.delete(fn=change_button_able_delate,inputs=file_script,outputs=button)
+        gr.Markdown("### 素材库")
+        # 创建一个表格输出用于显示文件信息
+        file_table = gr.Dataframe(headers=["名称", "大小", "最后修改"], label="文件列表")
+        
+        # 创建一个按钮用于刷新文件列表
+        refresh_button = gr.Button("刷新文件列表")
+        
+        # 当点击刷新按钮时，调用list_files函数更新文件列表
+        refresh_button.click(list_files, outputs=file_table)
+        demo.load(list_files, outputs=file_table)
+
+        video = gr.PlayableVideo()
+        button.click(fn=clip, inputs=file_script, outputs=video)
 
 
 demo.launch(share=True)
