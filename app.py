@@ -8,6 +8,11 @@ import autogen
 import engine
 
 from contentgenerate import llm_generate_content
+
+DASHSCOPE_API_KEY="sk-a48a1d84e015410292d07021f60b9acb"
+import os
+os.environ["DASHSCOPE_API_KEY"] = DASHSCOPE_API_KEY
+
 # def greet(name, intensity):
 
 #     return "Hello, " + str(name) + str(intensity)
@@ -137,40 +142,46 @@ def clip(file_scipt):
     
     return open_yaml(file_script)
     # return "project\森咖啡-script2\森咖啡-script2.mp4"
-    
 
 
      
 with gr.Blocks() as demo:
     with gr.Tab("行业找细分"):
         text_enterprise_name=gr.Text(label="输入企业的名字")
-        text_enterprise_industry_name=gr.Text(label="输入企业擅长的行业描述") 
+        text_enterprise_industry_name=gr.Text(label="输入企业的优势描述") 
         text_industry_name=gr.Text(label="输入想了解的行业")
         button=gr.Button("开始生成细分赛道推荐报告")
-        md_segmented=gr.Markdown(label="产业细分赛道推荐报告")
+        md_segmented=gr.Markdown(value="产业细分赛道推荐报告")
 
         button.click(fn=llm_generate_content.get_segmentation_anaysis,inputs=[text_industry_name,text_enterprise_name,text_enterprise_industry_name],outputs=md_segmented)
     with gr.Tab("细分找产品"):
         text_industry_name=gr.Text(label="输入细分所属的行业")
         text_segmented_name=gr.Text(label="输入想了解的细分")
         text_enterprise_name=gr.Text(label="输入企业的名字")
-        text_enterprise_industry_name=gr.Text(label="输入企业擅长的行业描述")
+        text_enterprise_industry_name=gr.Text(label="输入企业擅长的优势描述")
         
         button=gr.Button("开始生成赛道产品推荐报告")
-        md_product=gr.Markdown(label="赛道产品推荐报告")
+        md_product=gr.Markdown(value="赛道产品推荐报告")
         button.click(fn=llm_generate_content.get_product_anaysis,inputs=[text_industry_name,text_segmented_name,text_enterprise_name,text_enterprise_industry_name],outputs=md_product)
     with gr.Tab("产品找竞品"):
         text_enterprise_name=gr.Text(label="输入企业的名字")
         text_product_name=gr.Text(label="输入想了解的竞品")
         text_product_description=gr.Text(label="需要的话输入一些产品描述")
         button=gr.Button("开始生成产品竞品报告")
-        md_competitive=gr.Markdown(label="产品竞品报告")
+        md_competitive=gr.Markdown(value="产品竞品报告")
         button.click(fn=llm_generate_content.get_competitive_anaysis,inputs=[text_enterprise_name,text_product_name,text_product_description],outputs=md_competitive)
-
+    with gr.Tab("生成剪辑脚本"):
+        text_enterprise_name=gr.Text(label="输入企业的名字")
+        text_competitive_anaysis=gr.Text(label="输入竞品报告")
+        button=gr.Button("开始生成剪辑脚本")
+        md_screenplot=gr.Markdown(value="剪辑脚本")
+        button.click(fn=llm_generate_content.get_srennplay_plot,inputs=[text_enterprise_name,text_competitive_anaysis],outputs=md_screenplot)
     with gr.Tab("剪辑"):
-        file_script = gr.File(label="选择要剪辑的脚本文件，请确保素材库中有与脚本文件对应的素材")
+        file_script = gr.File(label="选择要剪辑的脚本文件（.yaml），请确保素材库中有与脚本文件对应的素材")
         
         file_footage = gr.File(label="选择素材文件上传")
+        html_tips1=gr.HTML(value="没思路可以去pixabay找素材")
+        html_tips2=gr.HTML(value="剪辑一般时长30s左右合成时间在15min左右，请耐心等待")
         button=gr.Button("开始剪辑")
         # button.visible=False
 

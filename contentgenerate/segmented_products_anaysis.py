@@ -21,7 +21,7 @@ from contentgenerate import llm_base
 
 
 
-def get_segmentation_prodcut_anaysis(enterprise_name,enterprise_industry_introduction,product_description):
+def get_segmentation_prodcut_anaysis(enterprise_name,enterprise_industry_introduction,segmentation_description):
     template='''
 
         ###背景：
@@ -69,10 +69,10 @@ def get_segmentation_prodcut_anaysis(enterprise_name,enterprise_industry_introdu
         根据市场需求、竞争态势、技术可行性和企业资源等因素，对所有潜在新产品方向进行优先级排序。
         提出最值得投资的几个新产品方向，并简要说明理由。
         审查与修订
-        完成初稿后，仔细检查报告的内容准确性、逻辑连贯性和语言表达质量，必要时进行修订以提高报告的质量。
+        请你完成初稿后，你要仔细检查报告的内容准确性、逻辑连贯性和语言表达质量，必要时由你进行修订以提高报告的质量，这里是我给你的提示，你尽量不要在回答出现这些语句。
 
-        ###具体产品描述：
-            {product_description}
+        ###具体细分赛道描述：
+            {segmentation_description}
                 
     '''
     
